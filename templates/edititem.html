@@ -1,0 +1,41 @@
+<html>
+<head>
+	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+
+<h1> Edit Item </h1>
+
+<form action="{{ url_for('editItem',categories_name = categories_name, items_name=items_name)}}" method = 'post'>
+
+<dl>
+	<dt>Name:</dt>
+		<dd><input type ='text' size='30' name='name' placeholder = '{{item.name }}'></dd>
+	</br>
+	<dt>Description:</dt>
+		<dd><textarea name = 'description' rows='5' cols='40' placeholder = '{{item.description }}'></textarea></dd>
+	<dt>Category</dt>
+		<dd>
+		<select name="category">
+		
+		<option value="Soccer">Soccer</option>
+		<option value="Basketball">Basketball</option>
+		<option value="Baseball">Baseball</option>
+		<option value="Frisbee">Frisbee</option>
+		<option value="Snowboarding">Snowboarding</option>
+		<option value="Football">Football</option>
+		<option value="Skating">Skating</option>
+		
+		</dd>
+  </select>
+</dl>
+
+
+<input type='submit' value='Edit'>
+
+<a href = '{{url_for('showdescription', categories_name = categories_name,
+items_name=items_name)}}'> Cancel </a>
+</form>
+</body>
+</html>

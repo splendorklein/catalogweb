@@ -1,0 +1,61 @@
+<html>
+<head>
+	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+<div class = 'flash'>
+	{% with messages = get_flashed_messages() %}
+      {% if messages %}
+          
+        <ul>
+        {% for message in messages %}
+            <li> <strong> {{ message }} </strong> </li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+</div>
+<div class = 'title'>	
+	
+	<div >
+		<div class = 'col-md-1'></div>
+		<a class = 'col-md-8' href = "{{url_for('showCatalog')}}">
+		<h1>Catalog App</h1>
+		
+		</a>
+		<div class = 'col-md-1'></div>
+		<a href = '{{url_for('showLogin')}}'>
+		<h5><button>login</button></h5>
+		</a>
+	</div>
+</div>
+<div class = 'container'>
+
+	<div class = 'content col-md-12'>
+		<div class = 'col-md-1'></div>
+		<div class = 'pane col-md-4'>
+			<h2> Categories </h2>
+			{% for category in categories %}
+			<a href = "{{url_for('showitems', categories_name = category.name)}}"> 
+			<h4>{{category.name}}</h4>
+			</a>
+			{% endfor %}
+		</div>
+
+		<div class = 'pane col-md-6'>
+		
+			<h2> Latest Items </h2>
+			{% for item in items %}
+			<a href = "{{url_for('showdescription', 
+			categories_name = item.category_name,items_name=item.name)}}"> 
+			<h4>{{item.name}} <i class='catname'>({{item.category_name}})</i></h4>
+			</a>
+			{% endfor %}
+		</div>
+	</div>
+</div>
+</body>
+
+</html>
