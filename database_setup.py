@@ -53,7 +53,7 @@ class Items(Base):
 
 
 
-engine = create_engine('sqlite:///catalog.db')
+engine = create_engine('sqlite:////var/www/catalogweb/catalogweb/catalog.db')
  
 
 Base.metadata.create_all(engine)
