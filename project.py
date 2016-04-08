@@ -287,7 +287,7 @@ def showitems(categories_name):
     items = session.query(Items).filter_by(category_name=categories_name).all()
     count = len(items)
     
-    if 'username' not in login_session:
+    if False:
         return render_template('items.html', categories=categories, items = items,
         cat = cat,count=count)
     else:
