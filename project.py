@@ -129,7 +129,7 @@ def gconnect():
 
     try:
         # Upgrade the authorization code into a credentials object
-        oauth_flow = flow_from_clientsecrets('client_secrets.json', scope='')
+        oauth_flow = flow_from_clientsecrets('/var/www/catalogweb/catalogweb/client_secrets.json', scope='')
         oauth_flow.redirect_uri = 'postmessage'
         credentials = oauth_flow.step2_exchange(code)
     except FlowExchangeError:
@@ -146,6 +146,7 @@ def gconnect():
     result = json.loads(h.request(url, 'GET')[1])
     # If there was an error in the access token info, abort.
     if result.get('error') is not None:
+        print '500 error'
         response = make_response(json.dumps(result.get('error')), 500)
         response.headers['Content-Type'] = 'application/json'
 
@@ -215,14 +216,14 @@ def createUser(login_session):
     session.add(newUser)
     session.commit()
     user = session.query(User).filter_by(email=login_session['email']).one()
-    session.remove()
+    
     return user.id
 
 
 def getUserInfo(user_id):
     session = connect()
     user = session.query(User).filter_by(id=user_id).one()
-    session.remove()
+    
     return user
 
 
@@ -230,7 +231,7 @@ def getUserID(email):
     try:
         session = connect()
         user = session.query(User).filter_by(email=email).one()
-        session.remove()
+        
         return user.id
     except:
         return None
@@ -254,27 +255,12 @@ def gdisconnect():
         response.headers['Content-Type'] = 'application/json'
         return response
 
-'''
-# JSON APIs to view Restaurant Information
-@app.route('/catalog/<string:categories_name>/JSON')
-def categoryItemsJSON(categories_name):
-    categories = session.query(Categories).filter_by(name=categories_name).one()
-    items = session.query(Items).filter_by(
-        category_name=categories_name).all()
-    return jsonify(items=[i.serialize for i in items])
-
-
-@app.route('/catalog/<string:categories_name>/<string:items_name>/JSON')
-def ItemsJSON(categories_name, items_name):
-    Item = session.query(Items).filter_by(name=items_name).one()
-    return jsonify(Menu_Item=Menu_Item.serialize)
-'''
 
 @app.route('/catalog.json')
 def categoriesJSON():
     session = connect()
     items = session.query(Items).all()
-    session.remove()
+    
     return jsonify(categories=[i.serialize for i in items])
 
 
@@ -285,7 +271,7 @@ def showCatalog():
     session = connect()
     categories = session.query(Categories)  #.order_by(asc(Restaurant.name))
     items = session.query(Items).order_by(Items.id.desc()).limit(10)
-    session.remove()
+    
     if 'username' not in login_session:
         return render_template('categories.html', categories=categories, items = items)
     else:    
@@ -300,7 +286,7 @@ def showitems(categories_name):
     cat = session.query(Categories).filter_by(name=categories_name).one()
     items = session.query(Items).filter_by(category_name=categories_name).all()
     count = len(items)
-    session.remove()
+    
     if 'username' not in login_session:
         return render_template('items.html', categories=categories, items = items,
         cat = cat,count=count)
@@ -313,7 +299,7 @@ def showitems(categories_name):
 def showdescription(categories_name,items_name):
     session = connect()
     items = session.query(Items).filter_by(category_name=categories_name, name=items_name).one()
-    session.remove()
+    
     if (items == []):
         return 'item not found'
     elif 'username' not in login_session: 
@@ -332,14 +318,14 @@ def newItem(categories_name):
         session = connect()
         categories = session.query(Categories).filter_by(name=categories_name).one()
     except:
-        session.remove()
+        
         return 'category name does not exist!'
 
     if request.method == 'POST':
         try:
             findItme= session.query(Items).filter_by(
                 category_name=categories_name, name=request.form['name']).one()
-            session.remove()
+            
             return 'Name already exists!'
         except:
 
@@ -352,10 +338,10 @@ def newItem(categories_name):
                 session.add(newItem)
                 session.commit()
                 flash('New %s Item Successfully Created' % (newItem.name))
-        session.remove()            
+                    
         return redirect(url_for('showitems', categories_name=categories_name))
     else:
-        session.remove()
+        
         return render_template('newitem.html', categories_name=categories_name)
 
 # Edit a menu item
@@ -379,10 +365,10 @@ def editItem(categories_name, items_name):
         session.add(editedItem)
         session.commit()
         flash('Menu Item Successfully Edited')
-        session.remove()
+        
         return redirect(url_for('showitems', categories_name=categories_name))
     else:
-        session.remove()
+        
         return render_template('edititem.html', 
             categories_name=categories_name, items_name=items_name, item=editedItem)
 
@@ -399,10 +385,10 @@ def deleteItem(categories_name, items_name):
         session.delete(itemToDelete)
         session.commit()
         flash('Menu Item Successfully Deleted')
-        session.remove()
+        
         return redirect(url_for('showitems', categories_name=categories_name))
     else:
-        session.remove()
+        
         return render_template('deleteItem.html', item=itemToDelete)
 
 
