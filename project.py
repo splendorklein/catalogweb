@@ -16,16 +16,18 @@ app = Flask(__name__)
 
 
 CLIENT_ID = json.loads(
-    open('client_secrets.json', 'r').read())['web']['client_id']
+    open('/var/www/catalogweb/catalogweb/client_secrets.json', 'r').read())['web']['client_id']
 APPLICATION_NAME = "Restaurant Menu Application"
 
 
 # Connect to Database and create database session
-engine = create_engine('sqlite:///catalog.db')
-Base.metadata.bind = engine
+def connect():    
+    engine = create_engine('sqlite:////var/www/catalogweb/catalogweb/catalog.db')
+    Base.metadata.bind = engine
 
-DBSession = sessionmaker(bind=engine)
-session = DBSession()
+    DBSession = sessionmaker(bind=engine)
+    session = DBSession()
+    return session
 
 
 # Create anti-forgery state token
@@ -46,10 +48,10 @@ def fbconnect():
     access_token = request.data
     print "access token received %s " % access_token
 
-    app_id = json.loads(open('fb_client_secrets.json', 'r').read())[
+    app_id = json.loads(open('/var/www/catalogweb/catalogweb/fb_client_secrets.json', 'r').read())[
         'web']['app_id']
     app_secret = json.loads(
-        open('fb_client_secrets.json', 'r').read())['web']['app_secret']
+        open('/var/www/catalogweb/catalogweb/fb_client_secrets.json', 'r').read())['web']['app_secret']
     url = 'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=%s&client_secret=%s&fb_exchange_token=%s' % (
         app_id, app_secret, access_token)
     h = httplib2.Http()
@@ -209,20 +211,26 @@ def gconnect():
 def createUser(login_session):
     newUser = User(name=login_session['username'], email=login_session[
                    'email'], picture=login_session['picture'])
+    session = connect()
     session.add(newUser)
     session.commit()
     user = session.query(User).filter_by(email=login_session['email']).one()
+    session.remove()
     return user.id
 
 
 def getUserInfo(user_id):
+    session = connect()
     user = session.query(User).filter_by(id=user_id).one()
+    session.remove()
     return user
 
 
 def getUserID(email):
     try:
+        session = connect()
         user = session.query(User).filter_by(email=email).one()
+        session.remove()
         return user.id
     except:
         return None
@@ -264,7 +272,9 @@ def ItemsJSON(categories_name, items_name):
 
 @app.route('/catalog.json')
 def categoriesJSON():
+    session = connect()
     items = session.query(Items).all()
+    session.remove()
     return jsonify(categories=[i.serialize for i in items])
 
 
@@ -272,8 +282,10 @@ def categoriesJSON():
 @app.route('/')
 @app.route('/catalog')
 def showCatalog():
+    session = connect()
     categories = session.query(Categories)  #.order_by(asc(Restaurant.name))
     items = session.query(Items).order_by(Items.id.desc()).limit(10)
+    session.remove()
     if 'username' not in login_session:
         return render_template('categories.html', categories=categories, items = items)
     else:    
@@ -283,10 +295,12 @@ def showCatalog():
 @app.route('/catalog/<string:categories_name>')
 @app.route('/catalog/<string:categories_name>/items')
 def showitems(categories_name):
+    session = connect()
     categories = session.query(Categories)  
     cat = session.query(Categories).filter_by(name=categories_name).one()
     items = session.query(Items).filter_by(category_name=categories_name).all()
     count = len(items)
+    session.remove()
     if 'username' not in login_session:
         return render_template('items.html', categories=categories, items = items,
         cat = cat,count=count)
@@ -297,7 +311,9 @@ def showitems(categories_name):
 
 @app.route('/catalog/<string:categories_name>/<string:items_name>')
 def showdescription(categories_name,items_name):
+    session = connect()
     items = session.query(Items).filter_by(category_name=categories_name, name=items_name).one()
+    session.remove()
     if (items == []):
         return 'item not found'
     elif 'username' not in login_session: 
@@ -313,14 +329,17 @@ def newItem(categories_name):
     if 'username' not in login_session:
         return redirect('/login')
     try:
+        session = connect()
         categories = session.query(Categories).filter_by(name=categories_name).one()
     except:
+        session.remove()
         return 'category name does not exist!'
 
     if request.method == 'POST':
         try:
             findItme= session.query(Items).filter_by(
                 category_name=categories_name, name=request.form['name']).one()
+            session.remove()
             return 'Name already exists!'
         except:
 
@@ -332,9 +351,11 @@ def newItem(categories_name):
                                    'description'],categories_name = categories)
                 session.add(newItem)
                 session.commit()
-                flash('New %s Item Successfully Created' % (newItem.name))            
+                flash('New %s Item Successfully Created' % (newItem.name))
+        session.remove()            
         return redirect(url_for('showitems', categories_name=categories_name))
     else:
+        session.remove()
         return render_template('newitem.html', categories_name=categories_name)
 
 # Edit a menu item
@@ -344,6 +365,7 @@ def newItem(categories_name):
 def editItem(categories_name, items_name):
     if 'username' not in login_session:
         return redirect('/login')
+    session = connect()
     editedItem = session.query(Items).filter_by(name=items_name).one()
     categories = session.query(Categories).filter_by(name=categories_name).one()
     if request.method == 'POST':
@@ -357,8 +379,10 @@ def editItem(categories_name, items_name):
         session.add(editedItem)
         session.commit()
         flash('Menu Item Successfully Edited')
+        session.remove()
         return redirect(url_for('showitems', categories_name=categories_name))
     else:
+        session.remove()
         return render_template('edititem.html', 
             categories_name=categories_name, items_name=items_name, item=editedItem)
 
@@ -368,14 +392,17 @@ def editItem(categories_name, items_name):
 def deleteItem(categories_name, items_name):
     if 'username' not in login_session:
         return redirect('/login')
+    session = connect()
     categories = session.query(Categories).filter_by(name=categories_name).one()
     itemToDelete = session.query(Items).filter_by(name=items_name).one()
     if request.method == 'POST':
         session.delete(itemToDelete)
         session.commit()
         flash('Menu Item Successfully Deleted')
+        session.remove()
         return redirect(url_for('showitems', categories_name=categories_name))
     else:
+        session.remove()
         return render_template('deleteItem.html', item=itemToDelete)
 
 
